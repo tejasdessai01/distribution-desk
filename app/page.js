@@ -7,6 +7,7 @@ export default function Home() {
       </p>
       <a href="/dashboard" style={{padding:'10px 14px',background:'#000',color:'#fff',borderRadius:8,textDecoration:'none'}}>
         Open Dashboard
+          <a href="/admin" style={{padding:'8px 12px',border:'1px solid #ddd',borderRadius:6,textDecoration:'none'}}>Admin</a>
       </a>
     </main>
   )
