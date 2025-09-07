@@ -1,13 +1,33 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Papa from 'papaparse'
 
 export default function Dashboard(){
   const [tickers,setTickers]=useState('VOO, QQQ, BND')
   const [rows,setRows]=useState([])              // events table (with tags)
   const [loading,setLoading]=useState(false)
-  const [csvInfo,setCsvInfo]=useState({ total:0, tags:{} }) // summary of CSV: { total, tags: { TagName: [TICKER,...] } }
+  const [csvInfo,setCsvInfo]=useState({ total:0, tags:{} }) // { total, tags: { TagName: [TICKER,...] } }
   const [tagMap,setTagMap]=useState({})          // { TagName: [TICKER, ...] }
+
+  // Branding (stored locally in the browser)
+  const [brandName, setBrandName] = useState('')
+  const [logoUrl, setLogoUrl] = useState('')
+  const [savedMsg, setSavedMsg] = useState('')
+
+  useEffect(() => {
+    // load saved branding
+    const bn = localStorage.getItem('dd_brandName') || ''
+    const lu = localStorage.getItem('dd_logoUrl') || ''
+    setBrandName(bn)
+    setLogoUrl(lu)
+  }, [])
+
+  function saveBranding() {
+    localStorage.setItem('dd_brandName', brandName.trim())
+    localStorage.setItem('dd_logoUrl', logoUrl.trim())
+    setSavedMsg('Saved ✓')
+    setTimeout(()=>setSavedMsg(''), 1500)
+  }
 
   function sanitizeTicker(s){
     const out = String(s||'').toUpperCase().replace(/[^A-Z0-9.-]/g,'').slice(0,6)
@@ -50,7 +70,7 @@ export default function Dashboard(){
         const tags = Object.fromEntries(Object.entries(m).map(([k,v])=>[k, Array.from(v)]))
         setTagMap(tags)
 
-        const uniqueTickers = Array.from(new Set(mapped.map(r=>r.ticker))) // <- fix
+        const uniqueTickers = Array.from(new Set(mapped.map(r=>r.ticker)))
         setCsvInfo({ total: uniqueTickers.length, tags })
 
         // also prefill the paste box with unique tickers from CSV
@@ -106,6 +126,34 @@ export default function Dashboard(){
           <div style={{fontSize:12,opacity:0.8,marginTop:4}}>
             CSV headers accepted: <code>Ticker</code> (required). Optional aliases: <code>Symbol</code>, <code>Security</code>. Optional <code>Tag</code> (aliases: Household, Model, Client, HHID) and <code>Custodian</code> (alias: Platform).
           </div>
+        </div>
+      </div>
+
+      {/* Branding settings */}
+      <div style={{marginTop:20, border:'1px solid #eee', padding:12, borderRadius:8}}>
+        <div style={{fontWeight:700, marginBottom:8}}>Branding (for one-pager)</div>
+        <div style={{display:'grid', gridTemplateColumns:'160px 1fr', gap:10, alignItems:'center'}}>
+          <label>Brand Name</label>
+          <input
+            placeholder="e.g., Dessai Wealth"
+            value={brandName}
+            onChange={e=>setBrandName(e.target.value)}
+            style={{padding:'8px', border:'1px solid #ddd', borderRadius:6}}
+          />
+          <label>Logo URL</label>
+          <input
+            placeholder="https://…/logo.png (optional)"
+            value={logoUrl}
+            onChange={e=>setLogoUrl(e.target.value)}
+            style={{padding:'8px', border:'1px solid #ddd', borderRadius:6}}
+          />
+        </div>
+        <div style={{marginTop:10, display:'flex', gap:10, alignItems:'center'}}>
+          <button onClick={saveBranding} style={{padding:'6px 10px', border:'1px solid #ddd', borderRadius:6}}>Save</button>
+          <span style={{fontSize:12, opacity:.8}}>{savedMsg}</span>
+        </div>
+        <div style={{fontSize:12, opacity:.7, marginTop:6}}>
+          Tip: Open a one-pager after saving; it will automatically pick up your brand.
         </div>
       </div>
 
