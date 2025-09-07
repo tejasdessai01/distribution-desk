@@ -5,8 +5,18 @@ import { useSearchParams } from 'next/navigation'
 export default function ReportClient(){
   const searchParams = useSearchParams()
   const tickers = searchParams.get('tickers') || ''
-  const title = searchParams.get('title') || 'One-Pager'
+  const titleParam = searchParams.get('title') || 'One-Pager'
   const [rows,setRows] = useState([])
+  const [brandName, setBrandName] = useState('')
+  const [logoUrl, setLogoUrl] = useState('')
+
+  useEffect(()=>{
+    // load brand from localStorage (set on the dashboard)
+    const bn = localStorage.getItem('dd_brandName') || ''
+    const lu = localStorage.getItem('dd_logoUrl') || ''
+    setBrandName(bn)
+    setLogoUrl(lu)
+  },[])
 
   useEffect(()=>{
     (async ()=>{
@@ -26,13 +36,19 @@ export default function ReportClient(){
         th, td { border: 1px solid #eee; padding: 8px; text-align: left; }
         th { background: #fafafa; }
         .actions { margin: 12px 0 20px; }
+        .brand { display:flex; align-items:center; gap:12px; margin-bottom: 10px; }
+        .brand img { height: 28px; width:auto; object-fit:contain; }
         @media print {
           .actions { display: none; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `}</style>
 
-      <h1>{title}</h1>
+      <div className="brand">
+        {logoUrl ? <img src={logoUrl} alt="logo" /> : null}
+        <div style={{fontSize:18, fontWeight:700}}>{brandName || 'Advisory'}</div>
+      </div>
+      <h1>{titleParam}</h1>
       <div className="muted">Upcoming ETF distributions (next 30–60 days)</div>
 
       <div className="actions">
