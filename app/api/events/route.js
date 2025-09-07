@@ -1,21 +1,42 @@
+import { supabase } from '@/lib/supabase'
+
+// Avoid static prerender issues
+export const dynamic = 'force-dynamic'
+
 export async function GET(request){
   const { searchParams } = new URL(request.url)
   const tickersParam = searchParams.get('tickers') || ''
   const tickers = tickersParam.split(/[\s,]+/).map(s=>s.trim().toUpperCase()).filter(Boolean)
 
-  // mock a few events per ticker (so you can test UX before wiring data)
-  const today = new Date()
+  // date window: now .. +60 days (same as mock)
+  const now = new Date()
+  const to = new Date(now.getTime() + 60*24*3600*1000)
   const fmt = (d)=> d.toISOString().slice(0,10)
 
-  const events = tickers.flatMap((t,i)=>{
-    const base = new Date(today.getTime()+ (i+1)*3*24*3600*1000)
-    return [
-      { ticker:t, name:`${t} Fund`, type:'DIVIDEND', exDate:fmt(base), recordDate:fmt(addDays(base,1)), payDate:fmt(addDays(base,5)), amount: Math.random()>0.5? (0.1+Math.random()*0.5).toFixed(2): null },
-      { ticker:t, name:`${t} Fund`, type:'DIVIDEND', exDate:fmt(addDays(base,30)), recordDate:fmt(addDays(base,31)), payDate:fmt(addDays(base,35)), amount: null }
-    ]
-  })
+  let query = supabase
+    .from('events')
+    .select('ticker,name,event_type,ex_date,record_date,pay_date,amount')
+    .gte('ex_date', fmt(now))
+    .lte('ex_date', fmt(to))
+    .order('ex_date', { ascending: true })
+
+  if (tickers.length) query = query.in('ticker', tickers)
+
+  const { data, error } = await query
+  if (error) {
+    return new Response(JSON.stringify({ events: [], error: error.message }), { status: 500 })
+  }
+
+  // map DB rows → UI format
+  const events = (data||[]).map(r => ({
+    ticker: r.ticker,
+    name: r.name,
+    type: r.event_type || 'DIVIDEND',
+    exDate: r.ex_date,
+    recordDate: r.record_date,
+    payDate: r.pay_date,
+    amount: r.amount
+  }))
 
   return new Response(JSON.stringify({ events }), { headers: { 'content-type':'application/json' }})
 }
-
-function addDays(date,days){ const d = new Date(date); d.setDate(d.getDate()+days); return d }
